@@ -24,13 +24,39 @@ from synthetic_sensor_stream import SimulatorEngine
 
 router = APIRouter(prefix="/simulator", tags=["Simulator"])
 
+from ..config import settings
+from ..telemetry_hub import hub
+import asyncio
+
+_main_loop = None
+
+def set_main_loop(loop):
+    global _main_loop
+    _main_loop = loop
+
+def _dispatch_to_hub(payload):
+    global _main_loop
+    try:
+        loop = _main_loop
+        if loop is None or loop.is_closed():
+            try:
+                loop = asyncio.get_event_loop()
+            except Exception:
+                loop = None
+        if loop and loop.is_running():
+            asyncio.run_coroutine_threadsafe(hub.broadcast_telemetry(payload), loop)
+    except Exception:
+        pass
+
 # Global simulator engine instance attached to backend
 sim_engine = SimulatorEngine(
     device_id="unit_001",
     ref_lat=12.97160000,
     ref_lon=77.59460000,
     ref_alt=900.0,
-    ref_heading=0.0
+    ref_heading=0.0,
+    auth_token=settings.DEFAULT_DEVICE_TOKEN,
+    on_telemetry=_dispatch_to_hub
 )
 
 

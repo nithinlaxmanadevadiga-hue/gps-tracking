@@ -88,6 +88,8 @@ async def lifespan(app: FastAPI):
     # Startup
     await seed_initial_data()
     loop = asyncio.get_running_loop()
+    from .api.simulator import set_main_loop
+    set_main_loop(loop)
     mqtt_service.start(loop)
     yield
     # Shutdown

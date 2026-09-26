@@ -41,8 +41,9 @@ class SimulatorEngine:
         ref_lon: float = 77.59460000,
         ref_alt: float = 900.0,
         ref_heading: float = 0.0,
-        backend_url: str = "http://localhost:8000/api/telemetry",
-        auth_token: str = "dev-device-token-secret"
+        backend_url: Optional[str] = None,
+        auth_token: Optional[str] = None,
+        on_telemetry: Optional[Any] = None
     ):
         self.device_id = device_id
         self.ref_point = ReferencePoint(
@@ -52,13 +53,18 @@ class SimulatorEngine:
             heading=ref_heading
         )
 
+        port = os.getenv("PORT", "8000")
+        resolved_backend_url = backend_url or f"http://127.0.0.1:{port}/api/telemetry"
+        resolved_auth_token = auth_token or os.getenv("DEFAULT_DEVICE_TOKEN", "dev-device-token-secret")
+        self.on_telemetry = on_telemetry
+
         self.trajectory_gen = TrajectoryGenerator(pattern="figure8", speed_multiplier=1.0)
         self.esekf = ESEKF15(ESEKFConfig())
         self.health = HealthMonitor()
         self.telemetry = TelemetryPublisher(
             device_id=device_id,
-            auth_token=auth_token,
-            server_url=backend_url
+            auth_token=resolved_auth_token,
+            server_url=resolved_backend_url
         )
 
         # Simulation runtime controls
@@ -307,4 +313,9 @@ class SimulatorEngine:
         self.health.record_telemetry()
         self.telemetry.publish_http(payload)
         self.telemetry.publish_mqtt(payload)
+        if self.on_telemetry:
+            try:
+                self.on_telemetry(payload)
+            except Exception:
+                pass
         return payload
