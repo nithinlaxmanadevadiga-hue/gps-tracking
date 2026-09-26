@@ -1,0 +1,19 @@
+services:
+  # Unified Web Service (Backend API + WebSockets + Embedded React Dashboard)
+  - type: web
+    name: gps-denied-tracking
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEFAULT_DEVICE_TOKEN
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./gps_tracking.db
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: MQTT_ENABLE
+        value: "false"

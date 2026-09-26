@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: gps_tracking_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gps_tracking
+      POSTGRES_USER: gps_user
+      POSTGRES_PASSWORD: gps_secure_password_2026
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gps_user -d gps_tracking"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MQTT Broker (Mosquitto)
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: gps_tracking_mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  # FastAPI Ground Station Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gps_tracking_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://gps_user:gps_secure_password_2026@db:5432/gps_tracking
+      - SECRET_KEY=super-secret-jwt-signing-key-for-gps-denied-localization-2026
+      - DEFAULT_DEVICE_TOKEN=dev-device-token-secret
+      - MQTT_ENABLE=true
+      - MQTT_BROKER=mqtt
+      - MQTT_PORT=1883
+    ports:
+      - "8000:8000"
+
+  # React Frontend Dashboard & Reverse Proxy
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gps_tracking_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+  # ROS 2 Localization Node (Edge / Simulator)
+  ros2-localization:
+    image: ros:humble-ros-base
+    container_name: gps_tracking_ros2
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ./ros2_ws:/ros2_ws
+    working_dir: /ros2_ws
+    command: >
+      bash -c "source /opt/ros/humble/setup.bash &&
+               colcon build --symlink-install &&
+               source install/setup.bash &&
+               ros2 launch gps_denied_localization simulator.launch.py"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  pgdata:

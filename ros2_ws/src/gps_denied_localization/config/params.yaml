@@ -1,0 +1,49 @@
+gps_denied_localization_node:
+  ros__parameters:
+    device_id: "unit_001"
+    
+    # Reference Origin (E=0, N=0, U=0)
+    reference:
+      latitude: 12.97160000
+      longitude: 77.59460000
+      altitude: 900.0
+      initial_heading: 0.0 # Degrees from True North (0=North, 90=East)
+
+    # ROS 2 Topic Names
+    topics:
+      imu: "/imu/data"
+      lidar_points: "/lidar/points"
+      velocity: "/velocity"
+      lio_pose: "/lio/pose"
+      telemetry: "/localization/telemetry"
+
+    # ESEKF Tuning & Noise Characteristics
+    esekf:
+      accel_noise: 0.05        # m/s^2 / sqrt(Hz)
+      gyro_noise: 0.005        # rad/s / sqrt(Hz)
+      accel_bias_noise: 0.001  # m/s^3 / sqrt(Hz)
+      gyro_bias_noise: 0.0001  # rad/s^2 / sqrt(Hz)
+      lio_pos_noise: 0.05      # m
+      lio_rot_noise: 0.02      # rad
+      vel_sensor_noise: 0.05   # m/s
+      gravity: 9.80665
+
+    # Failure Detection & Quality Thresholds
+    health:
+      max_jump_threshold: 5.0      # meters
+      max_pos_cov_trace: 25.0      # m^2
+      chi2_threshold_lio: 22.46    # 6-DOF gating
+      imu_timeout_sec: 0.5
+      lidar_timeout_sec: 1.0
+      velocity_timeout_sec: 1.0
+
+    # Ground Station Telemetry Connection
+    telemetry:
+      enable_network_publish: true
+      protocol: "websocket" # "websocket" or "mqtt" or "http"
+      server_url: "ws://localhost:8000/ws/telemetry/ingest"
+      mqtt_broker: "localhost"
+      mqtt_port: 1883
+      mqtt_topic: "telemetry/unit_001"
+      auth_token: "dev-device-token-secret"
+      publish_rate_hz: 10.0

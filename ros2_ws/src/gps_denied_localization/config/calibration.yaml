@@ -1,0 +1,38 @@
+# LiDAR/IMU Extrinsic Calibration Configuration
+# Coordinate-frame conventions:
+#
+#       map / enu (Local East-North-Up fixed at reference point)
+#           |
+#       base_link (Center of mobile platform / body frame)
+#       ├── imu_link (IMU sensing center)
+#       └── lidar_link (Optical center of 3D LiDAR)
+#
+# Extrinsic transform: lidar_link -> imu_link
+# Transform representation: translation in meters (x, y, z), rotation in Euler angles (roll, pitch, yaw) in degrees
+
+extrinsic_calibration:
+  lidar_to_imu:
+    translation:
+      x: 0.05
+      y: 0.0
+      z: 0.12
+    rotation:
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+
+  base_to_imu:
+    translation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+    rotation:
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+
+frames:
+  world_frame: "map"       # or "enu"
+  base_frame: "base_link"
+  imu_frame: "imu_link"
+  lidar_frame: "lidar_link"
